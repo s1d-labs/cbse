@@ -1,20 +1,30 @@
-"""Parsing tests on a saved page: fast, no network. Add a saved page for every layout your site has."""
+"""Parsers on saved SARAS pages (tests/pages)."""
 from pathlib import Path
+import sys
 
-import crawl
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import saras  # noqa: E402
 
 PAGES = Path(__file__).parent / "pages"
 
 
-def test_catalogue_page_gives_twenty_books():
-    rows = crawl.parse((PAGES / "catalogue-page-1.html").read_text(encoding="utf-8"))
-    assert len(rows) == 20
-    rid, book = rows[0]
-    assert rid == "a-light-in-the-attic_1000"                       # the site's own id: stable across runs
-    assert book["title"] == "A Light in the Attic" and book["price"] == "£51.77" and book["availability"] == "In stock"
-    assert book["url"].startswith("https://books.toscrape.com/catalogue/")
-    assert len({r for r, _ in rows}) == 20                          # no duplicate ids on a page
+def test_detail():
+    d = saras.parse_detail((PAGES / "detail-1000001.html").read_text())
+    assert d["aff_no"] == "1000001"
+    assert d["pincode"] == "462011"
+    assert d["level"] == "Senior Secondary Level"
+    assert d["school_type"] == "KV"
+    assert d["affiliated_from"] == "01/04/2026" and d["affiliated_to"] == "31/03/2031"
+    assert "gender" not in d and not any("qualif" in k for k in d)  # principal's personal details are not kept
 
 
-def test_an_empty_page_gives_nothing():
-    assert crawl.parse("<html><body>No products</body></html>") == []
+def test_empty_detail():
+    assert saras.parse_detail("<html><table><tr><td>Name of Institution</td><td></td></tr></table></html>") == {}
+
+
+def test_list():
+    rows = saras.parse_list((PAGES / "list-small.html").read_text())
+    assert len(rows) == 12
+    aff, r = rows[0]
+    assert aff == "3200001" and r["state"] == "LAKSHADWEEP" and r["school_code"] == "79902"
+    assert r["website"].startswith("https://")

@@ -1,13 +1,17 @@
 {
   "family": "cbse",
-  "about": "CBSE affiliation directory (saras.cbse.gov.in): every CBSE school, its affiliation and level",
+  "about": "CBSE affiliation directory (saras.cbse.gov.in): every CBSE school's affiliation, level, period and managing society. Used by schooldoor.in.",
   "setup": [
     "pip install -r requirements.txt"
   ],
   "tasks": {
-    "crawl": [
+    "lists": [
       "python",
-      "crawl.py"
+      "lists.py"
+    ],
+    "details": [
+      "python",
+      "details.py"
     ]
   }
 }

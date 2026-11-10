@@ -1,47 +1,24 @@
-# family-template
+# cbse: CBSE affiliation directory
 
-Start a new scraping family for the s1d-labs pool. A family is one kind of site (or one platform many sites share); the pool runs
-its code on members' GitHub Actions minutes. This template is a complete, working family for
-[books.toscrape.com](https://books.toscrape.com) (a public site made for scraping practice): copy it, then change it.
+s1d-labs scrape pool family. Source: **SARAS**, CBSE's affiliation directory (saras.cbse.gov.in), about 33,300 schools.
 
-## Make your family
+| Project | Task | Items | Records |
+|---|---|---|---|
+| `cbse-lists` | `lists.py` | one per state (38) | one per school: affiliation no., school code, state, district, level, name, principal, address, website |
+| `cbse-schools` | `details.py` | 25 affiliation numbers each | one per school: level, school type, trust/society, affiliation period, PIN code, year founded, website, address |
 
-1. Ask the hub owner to **add the family** on [scrape.s1d.me/runners](https://scrape.s1d.me/runners) (name, what it scrapes, owner).
-   The hub creates `s1d-labs/<family>` from this template, names the family in `scrape.json`, and makes the owner admin
-   (with the GitHub account they added on home.s1d.me).
-2. Clone it: `gh repo clone s1d-labs/<family>`.
-3. In your repo:
-   - `scrape.json`: set `"family"` to the family name; list your tasks (one command each) and setup steps.
-   - `family.py`: your projects (one queue of work per site), their target hosts, the env your command needs, the queue items,
-     and the health checks.
-   - `crawl.py` (or whatever your tasks run): the scraper.
-4. **Check it**: `scrape-check` in the repo (needs `pip install "scrape-hub-client @ git+https://github.com/s1d-labs/runner@main#subdirectory=sdk"`).
-   It runs your setup and task against a local stand-in hub on 3 real items and says what works. The **check** workflow runs it
-   (and `tests/`) on every push.
-5. Run the **setup** workflow (Actions → setup → Run workflow). It registers the projects, puts them in the pool and registers
-   the health checks.
-6. The hub starts runs in members' accounts when the pool is on and there is work. Watch it on scrape.s1d.me.
+Raw pages go to the family bucket: `cbse-lists/lists/<item>.html.gz`, `cbse-schools/details/<item>.tar.gz`.
 
-## What your code gets
+- **Not stored:** the principal's gender, qualifications and experience (shown on the detail page).
+- **Pacing:** SARAS refused some requests at about 1.3 requests a second from one client. The pool runs at most 2 workers,
+  one request at a time, 1.5 s apart.
+- **TLS:** the site's chain lacks its intermediate certificate; `sectigo-dv-r36.pem` is added to certifi's roots, so
+  certificates are still verified. Never turn verification off.
+- **Terms:** CBSE allows free reproduction if the material is reproduced accurately and the source is acknowledged
+  prominently. It asks for permission before other sites hyperlink to CBSE pages.
+- **Used by:** schooldoor.in (matched to UDISE+ schools in the schooldoor repo, `ops/cbse/match.py`).
 
-The pool worker ([s1d-labs/runner](https://github.com/s1d-labs/runner)) checks out this repo at `main`, runs the `setup` steps from
-`scrape.json`, and for each assignment runs the task's command here with:
+New schools: run `cbse-lists` again, rebuild `data/aff-nos.json` from its records, then run Setup.
+Tests: `python -m pytest tests` (saved pages in `tests/pages`), `scrape-check --items 2 --project cbse-schools`.
 
-| Variable | What |
-|---|---|
-| `SCRAPE_POOL_PROJECT` | the project to work on |
-| `SCRAPE_JOB_INDEX`, `SCRAPE_TOTAL_JOBS` | this worker's slice |
-| `SCRAPE_MAX_HOURS` | how long the command may run |
-| `SCRAPE_HUB_URL` | the hub |
-| your project's `env` | e.g. `SITE` |
-
-Use `scrape_hub_client` (`HubClient`) to claim queue items, store records, upload files and report counters. Exit when there is
-nothing left; the worker then asks the hub for the next assignment.
-
-## Rules (the full contract is in CLAUDE.md, written for people and for Claude Code)
-
-- **Be polite.** Use `hub.settings["threads"]` and `delay_ms`, idle while `hub.settings["paused"]`, and report `n_http` and
-  `t_http_s` for every request and `http_<code>` / `http_error` for failures: the hub throttles you from these.
-- **Files go through the hub** (`hub.upload_many`): it signs each upload into the family's bucket (500 GB per member) and stops at
-  the cap. Never put storage keys in this repo.
-- **Public data only**; read the site's terms first. See the team docs on home.s1d.me (Scraping rules).
+The technical contract for the hub and the runner is in `CLAUDE.md`.
