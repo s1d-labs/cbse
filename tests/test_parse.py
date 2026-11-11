@@ -15,7 +15,10 @@ def test_detail():
     assert d["level"] == "Senior Secondary Level"
     assert d["school_type"] == "KV"
     assert d["affiliated_from"] == "01/04/2026" and d["affiliated_to"] == "31/03/2031"
-    assert "gender" not in d and not any("qualif" in k for k in d)  # principal's personal details are not kept
+    assert d["principal_gender"] == "Male"
+    assert d["principal_qualifications"] == "M SC PHYSICS"
+    assert d["principal_admin_years"] == "10" and d["principal_teaching_years"] == "22"
+    assert "affiliation_type" not in d  # blank on this page
 
 
 def test_empty_detail():

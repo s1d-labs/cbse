@@ -89,12 +89,15 @@ def parse_list(page):
     return out
 
 
-# Only these fields are kept. The page also shows the principal's gender, qualifications and experience: not stored.
+# Every field on the page (public data, owner 2026-11-11), including the principal's details.
 DETAIL_LABELS = {
     "Name of Institution": "name", "Affiliation Number": "aff_no", "State": "state", "District": "district",
     "Postal Address": "address", "Pin Code": "pincode", "Website": "website", "Year of Foundation": "founded",
     "Date of First Opening of School": "first_opened", "Name of Principal/ Head of Institution": "principal",
     "Status of The School": "level", "School Type": "school_type", "Name of Trust/ Society/ Managing Committee": "society",
+    "Gender": "principal_gender", "Principal's Educational/Professional Qualifications:": "principal_qualifications",
+    "Administrative:": "principal_admin_years", "Teaching:": "principal_teaching_years",
+    "Type of affiliation": "affiliation_type", "Remarks, if any": "remarks",
 }
 
 
@@ -105,8 +108,9 @@ def parse_detail(page):
     out = {}
     for i, c in enumerate(cells[:-1]):
         key = DETAIL_LABELS.get(c)
-        if key and key not in out and cells[i + 1] and cells[i + 1] not in DETAIL_LABELS:
-            out[key] = cells[i + 1]
+        nxt = cells[i + 1]
+        if key and key not in out and nxt and nxt not in DETAIL_LABELS and not nxt.startswith(("No of Experience", "From :")):
+            out[key] = nxt
     m = re.search(r"From\s*:\s*(\d{2}/\d{2}/\d{4}).*?To\s*:\s*(\d{2}/\d{2}/\d{4})", " ".join(cells))
     if m:
         out["affiliated_from"], out["affiliated_to"] = m.group(1), m.group(2)
