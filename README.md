@@ -14,7 +14,7 @@ Raw pages go to the family bucket: `cbse-lists/lists/<item>.html.gz`, `cbse-scho
   bucket have them.
 - **Pacing:** SARAS refused some requests at about 1.3 requests a second from one client. The pool runs at most 2 workers,
   one request at a time, 1.5 s apart.
-- **TLS:** the site's chain lacks its intermediate certificate; `sectigo-dv-r36.pem` is added to certifi's roots, so
+- **TLS:** the site's chain lacks its intermediate certificate; scrape-hub-client's `ca_bundle()` adds it to certifi's roots, so
   certificates are still verified. Never turn verification off.
 - **Terms:** CBSE allows free reproduction if the material is reproduced accurately and the source is acknowledged
   prominently. It asks for permission before other sites hyperlink to CBSE pages.

@@ -1,19 +1,16 @@
 """Shared code for the cbse family: fetching from SARAS (saras.cbse.gov.in) and the two pure parsers.
 
-TLS: the site's certificate chain lacks its intermediate (Sectigo Public Server Authentication CA DV R36). The file
-sectigo-dv-r36.pem (from crt.sectigo.com) is added to certifi's roots, so certificates are still verified.
+TLS: the site's certificate chain lacks its intermediate (Sectigo Public Server Authentication CA DV R36). scrape-hub-client's
+ca_bundle() adds it (and other public intermediates) to certifi's roots, so certificates are still verified.
 
 Terms: CBSE's website policy allows free reproduction if the material is reproduced accurately and the source is
 acknowledged prominently; it asks for permission before other sites hyperlink to CBSE pages.
 """
 import html
-import os
 import re
-import tempfile
-import time
 
-import certifi
 import requests
+from scrape_hub_client import ca_bundle, timed_request
 
 BASE = "https://saras.cbse.gov.in"
 LIST_URL = BASE + "/SARAS/AffiliatedList/ListOfSchdirReport"
@@ -22,29 +19,16 @@ UA = "Mozilla/5.0 (compatible; s1d-labs/cbse school directory; +https://github.c
 
 
 def session():
-    bundle = os.path.join(tempfile.gettempdir(), "cbse-ca-bundle.pem")
-    with open(bundle, "w") as f:
-        f.write(open(certifi.where()).read())
-        f.write(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "sectigo-dv-r36.pem")).read())
     s = requests.Session()
-    s.verify = bundle
+    s.verify = ca_bundle()          # certifi + the Sectigo DV R36 intermediate the site does not send
     s.headers.update({"User-Agent": UA, "Referer": LIST_URL})
     return s
 
 
 def fetch(hub, s, url, data=None, timeout=120):
     """One request with the metrics the hub reads. Returns the page text, or None (counted as error or block)."""
-    t = time.time()
-    try:
-        r = s.post(url, data=data, timeout=timeout) if data is not None else s.get(url, timeout=timeout)
-    except requests.RequestException:
-        hub.metric("http_error"); hub.error()
-        return None
-    hub.metric("n_http"); hub.metric("t_http_s", time.time() - t)
-    if r.status_code != 200:
-        hub.metric(f"http_{r.status_code}")
-        if r.status_code in (403, 429, 503):
-            hub.block()
+    r = timed_request(hub, s, "POST" if data is not None else "GET", url, data=data, timeout=timeout)
+    if r is None or r.status_code != 200:
         return None
     r.encoding = r.encoding if r.encoding and r.encoding.lower() != "iso-8859-1" else "utf-8"
     return r.text
